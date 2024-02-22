@@ -5,7 +5,7 @@ import cors from "cors"
 const app = express()
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN, //accepts from all
     credentials: true,
 }))
 
@@ -14,5 +14,10 @@ app.use(express.urlencoded({extended: true, limit: "16kb"})) // to accept differ
 app.use(express.static("public"))  // to make files public
 app.use(cookieParser()) // for cookies CRUD operation
 
+//routes import
+import userRouter from './routes/user.routes.js'
+
+//routes declare
+app.use("/api/v1/users", userRouter)
 
 export { app }
