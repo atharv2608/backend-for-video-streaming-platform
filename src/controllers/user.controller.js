@@ -36,16 +36,24 @@ const registerUser = asyncHandler(async (req, res)=>{
     }
 
     //3) Check if user exists
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{email}, {username}]
     })
     if(existedUser){
         throw new ApiError(409, "User with similar credentials exist")
     }
-
+    console.log(req.files);
     //4) Check for images/avatar
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImagePath = req.files?.coverImage[0].path;
+    // const coverImagePath = req.files?.coverImage[0]?.path;
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
+        
+    } else {
+        
+    }
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required")
@@ -53,7 +61,7 @@ const registerUser = asyncHandler(async (req, res)=>{
 
     //5) Upload them to cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImagePath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     //If avatar is not uploaded in db it will cause errors as it is required field. So check if avatar is uploaded or not
     if(!avatar){
@@ -63,7 +71,7 @@ const registerUser = asyncHandler(async (req, res)=>{
     const user = await User.create({
         fullName,
         avatar: avatar.url,
-        coverImage: coverImage.url || "",
+        coverImage: coverImage?.url || "",
         email,
         password,
         username: username.toLowerCase()
