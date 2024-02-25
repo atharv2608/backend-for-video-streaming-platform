@@ -112,41 +112,41 @@ const registerUser = asyncHandler(async (req, res)=>{
 
 })
 
-const loginUser = asyncHandler(async (req, res)=>{
+const loginUser = asyncHandler(async (req, res) =>{
     //Steps
     //1) Req body for data
-    //2) USername or email
+    //2) Username or email
     //3) Find the user
     //4) Password check
     //5) Access and refresh token generation
     //6) Send tokens via secure cookies
 
     const {email, username, password} = req.body
-    if (!(username || email)) {
-        throw new ApiError(400, "Username or email is required")
+    
+    if (!username && !email) {
+        throw new ApiError(400, "username or email is required")
     }
 
     const user = await User.findOne({
         $or: [{username}, {email}]
     })
 
-    if(!user){
+    if (!user) {
         throw new ApiError(404, "User does not exist")
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password)
-    if(!isPasswordValid){
-        throw new ApiError(401, "Invalid credentials")
+   const isPasswordValid = await user.isPasswordCorrect(password)
+
+   if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid user credentials")
     }
 
-    const {accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
+   const {accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
 
-    //since we updated refreshToken in db after fetching user, we need to create another instance
-    const loggedInUser = await User.findById(user._id).select("-password - refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
-    //Cookies
     const options = {
-        httpOnly :true,
+        httpOnly: true,
         secure: true
     }
 
@@ -155,13 +155,15 @@ const loginUser = asyncHandler(async (req, res)=>{
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
-        new ApiResponse(200, 
+        new ApiResponse(
+            200, 
             {
                 user: loggedInUser, accessToken, refreshToken
             },
-            "User logged in successfully"
+            "User logged In Successfully"
         )
     )
+
 })
 
 const logoutUser = asyncHandler(async(req, res)=>{
