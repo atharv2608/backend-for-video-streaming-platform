@@ -4,7 +4,6 @@ import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/User.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
-import { response } from "express"
 
 const generateAccessandRefreshTokens = async(userId)=>{
     try {
@@ -70,8 +69,6 @@ const registerUser = asyncHandler(async (req, res)=>{
     let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path;
-        
-    } else {
         
     }
 
@@ -206,12 +203,14 @@ const refreshAccessToken = asyncHandler(async (req, res)=>{
             process.env.REFRESH_TOKEN_SECRET
         )
     
-        const user = await User.findById(decodedToken?._id)
-    
+        const user = await User.findById(decodedToken?._id).select(
+            "-password"
+        )
+
         if(!user){
             throw new ApiError(401, "Invalid Refresh Token")
         }
-    
+
         if(incomingRefreshToken !== user?.refreshToken){
             throw new ApiError(401, "Refresh token is expired")
         }
@@ -220,17 +219,19 @@ const refreshAccessToken = asyncHandler(async (req, res)=>{
             httpOnly :true,
             secure: true
         }
-    
-        const {accessToken, newRefreshToken} = await generateAccessandRefreshTokens(user._id)
+
+        const {accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
+        console.log("Refresh Token New: ", refreshToken);
+        console.log("Access Token New: ",accessToken);
     
         return res
         .status(200)
         .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", newRefreshToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
                 200,
-                {accessToken, refreshToken: newRefreshToken},
+                {accessToken, refreshToken: refreshToken},
                 "Access Token Refreshed"
             )
         )
