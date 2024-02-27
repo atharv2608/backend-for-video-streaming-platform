@@ -1,5 +1,7 @@
 import {v2 as cloudinary} from 'cloudinary';
 import fs from "fs"
+import { ApiError } from './ApiError.js';
+import { ApiResponse } from './ApiResponse.js';
           
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -25,4 +27,21 @@ const uploadOnCloudinary = async (localFilePath) =>{
         return null;
     }
 }
-export {uploadOnCloudinary}
+
+const deleteFromCloudinary = async(url)=>{
+    try{
+        if(!url){
+            throw new ApiError(401, "Url didn't fetched")
+        }
+        const publicId = url.match(/\/v\d+\/(.+)\.jpg/)[1];
+        await cloudinary.uploader.destroy(publicId, (error, result)=>{
+            if(error){
+                throw new ApiError(500, "Something went wrong while deleting old avatar")
+            }
+        })
+    }
+    catch(error){
+        throw new ApiError(500, "Internal Server error while deleting old avatar")
+    }
+}
+export {uploadOnCloudinary, deleteFromCloudinary}

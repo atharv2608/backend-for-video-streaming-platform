@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/User.model.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 
 const generateAccessandRefreshTokens = async(userId)=>{
@@ -296,6 +296,8 @@ const updateAccountDetails = asyncHandler(async (req, res)=>{
 })
 
 const updateUserAvatar = asyncHandler(async(req, res)=>{
+    const oldAvatarFetch = await User.findById(req.user?._id).select("avatar")
+    const oldAvatarUrl = oldAvatarFetch?.avatar
     const avatarLocalPath = req.files?.avatar[0]?.path
 
     if(!avatarLocalPath){
@@ -318,7 +320,8 @@ const updateUserAvatar = asyncHandler(async(req, res)=>{
             new: true
         }
     ).select("-password")
-
+    
+    await deleteFromCloudinary(oldAvatarUrl)
     return res
     .status(200)
     .json(
