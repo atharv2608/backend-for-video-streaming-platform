@@ -26,9 +26,14 @@ router.route("/login").post(upload.none(), loginUser)
 //secured routes 
 router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/refresh-token").post(refreshAccessToken)
-router.route("/change-password").post(verifyJWT, changeCurrentPassword)
+router.route("/change-password").post(verifyJWT, upload.none(), changeCurrentPassword)
 router.route("/get-user").get(verifyJWT, getCurrentUser)
-router.route("/update-user-details").post(verifyJWT, updateAccountDetails)
-router.route("/update-user-avatar").post(verifyJWT, updateUserAvatar)
+router.route("/update-user-details").post(verifyJWT, upload.none(), updateAccountDetails)
+router.route("/update-user-avatar").post(verifyJWT, upload.fields([
+    {
+        name: "avatar", //name should be similar to frontend field name
+        maxCount: 1
+    }
+]), updateUserAvatar)
 
 export default router 
