@@ -387,6 +387,80 @@ const resetPassword = asyncHandler(async(req, res)=>{
 
 })
 
+const getUserChannelProfile = asyncHandler(async(req, res)=>{
+    const {username} = req.params
+    if(!username?.trim()){
+        throw new ApiError(400, "User name is missing")
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match:{
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            //returns all the documents containing the user id in channel field
+            $lookup:{
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            //returns all the documents containing the user id in subscribers field
+            $lookup:{
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscribers",
+                as: "subscribedTo"
+            }
+        },
+        {
+            $addFields:{
+                subscibersCount:{
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount:{
+                    $size: "$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        //$subscribers are the documents. And in the document we are searching for subscriber id as user id.
+                        //Hence we did $subscriber.subscriber
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true, 
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project:{
+                fullName: 1,
+                username: 1,
+                subscibersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                email:1,
+                coverImage: 1 
+            }
+        }
+    ])
+
+    if(!channel?.length){
+        throw new ApiError(404, "Channel not found")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "Channel fetched successfully")
+    )
+})
+
 export {registerUser, 
     loginUser, 
     logoutUser, 
