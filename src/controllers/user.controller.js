@@ -329,6 +329,64 @@ const updateUserAvatar = asyncHandler(async(req, res)=>{
     )
 })
 
+
+const forgotPassword = asyncHandler(async(req, res)=>{
+    const {email} = req.body
+    if(!email){
+        throw new ApiError(400, "Email is required")
+    }
+    const user = await User.findOne({email})
+    if(!user){
+        throw new ApiError(404, "User does not exist")
+    }
+    try{
+        const resetToken = user.generateResetToken();
+        console.log("Reset Token:" , resetToken);
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+
+        return res
+        .status(200)
+        .cookie("resetToken", resetToken, options)
+        .json(
+            new ApiResponse(200, {}, "Check your email for reset link")
+        )
+    } 
+    catch(error){
+        throw new ApiError(500, "Something went wrong while generating reset tokens")
+    }
+})
+
+const resetPassword = asyncHandler(async(req, res)=>{
+    const token = req.params.token
+    const {newPassword} = req.body
+    if(!token){
+        throw new ApiError(401, "Unauthorized request")
+    }
+
+    try {
+        const decodedToken = jwt.verify(token, process.env.RESET_TOKEN_SECRET)
+        const user = await User.findById(decodedToken?._id)
+        if(!user){
+            throw new ApiError(401, "Invalid access token");
+        }
+        user.password = newPassword
+        await user.save({validateBeforeSave: false})
+    
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200, {}, "Password reset successfully")
+        )
+    } catch (error) {
+        throw new ApiError(401, "Invalid Access Token")
+    }
+
+})
+
 export {registerUser, 
     loginUser, 
     logoutUser, 
@@ -336,5 +394,7 @@ export {registerUser,
     changeCurrentPassword, 
     getCurrentUser,
     updateAccountDetails,
-    updateUserAvatar
+    updateUserAvatar,
+    forgotPassword,
+    resetPassword
 }

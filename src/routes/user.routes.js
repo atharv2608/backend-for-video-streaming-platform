@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeCurrentPassword, getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser, updateAccountDetails, updateUserAvatar } from "../controllers/user.controller.js";
+import { changeCurrentPassword, forgotPassword, getCurrentUser, loginUser, logoutUser, refreshAccessToken, registerUser, resetPassword, updateAccountDetails, updateUserAvatar } from "../controllers/user.controller.js";
 import {upload} from"../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router()
@@ -22,6 +22,8 @@ router.route("/register").post(
 //since user is sending only text data we are using upload.none()
 //If data is passed in just a json format and not using form data then no need of this middleware
 router.route("/login").post(upload.none(), loginUser)
+router.route("/forgot-password").post(upload.none(), forgotPassword)
+router.route("/reset-password/:token").post(upload.none(), resetPassword)
 
 //secured routes 
 router.route("/logout").post(verifyJWT, logoutUser)
